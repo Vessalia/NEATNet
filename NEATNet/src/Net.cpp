@@ -52,7 +52,7 @@ void Net::attemptMutation(double mutationRate)
 	double mutationChance = Net::randDecimal();
 	if (mutationChance < mutationRate)
 	{
-		unsigned int mutation = Net::randInt(4);
+		unsigned int mutation = Net::randInt(5);
 
 		switch (mutation)
 		{
@@ -71,6 +71,10 @@ void Net::attemptMutation(double mutationRate)
 			case 3:
 				std::cout << "remove connection\n" << std::endl;
 				removeRandomConnection();
+				break;
+			case 4:
+				std::cout << "randomize a weight\n" << std::endl;
+				randomizeRandomWeight();
 				break;
 		}
 	}
@@ -138,7 +142,7 @@ void Net::addConnection(size_t in, size_t out)
 		connection->in = in;
 		connection->out = out;
 		connection->enabled = true;
-		connection->weight = Net::randDecimal();
+		connection->weight = 2 * Net::randDecimal() - 1;
 		connection->innovation = m_innovation++;
 
 		m_genotype.connections.push_back(connection);
@@ -234,6 +238,14 @@ void Net::removeConnection(size_t in, size_t out)
 void Net::removeConnection(Connection* connection)
 {
 	removeConnection(connection->in, connection->out);
+}
+
+void Net::randomizeRandomWeight()
+{
+	if (m_genotype.connections.size() > 0)
+	{
+		m_genotype.connections[randInt((int)m_genotype.connections.size())]->weight = 2 * Net::randDecimal() - 1;
+	}
 }
 
 bool Net::cullConnections()

@@ -21,7 +21,7 @@ private:
 	size_t m_numInputs;
 	size_t m_numOutputs;
 
-	static int randInt(int val) { return rand() % val; }
+	static int randInt(int val) { if (val != 0) { return rand() % val; } else { return 0; } }
 	static double randDecimal() { return rand() / double(RAND_MAX); }
 
 	void addHiddenNode();
@@ -36,6 +36,8 @@ private:
 	void removeRandomConnection();
 	void removeConnection(size_t in, size_t out);
 	void removeConnection(NetComponents::Connection* connection);
+
+	void randomizeRandomWeight();
 
 	bool cullConnections();
 };
