@@ -2,10 +2,18 @@
 //
 
 #include <iostream>
+#include "Net.h"
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    srand((unsigned int)time(NULL));
+    Net net(3, 2);
+    net.receiveInput({ 10, 9, 3 });
+    for (size_t i = 0; i < 10; ++i)
+    {
+        net.attemptMutation(0.5);
+    }
+    int x = 1;
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
