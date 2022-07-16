@@ -29,7 +29,7 @@ private:
 	void addConnection(size_t in, size_t out);
 
 	bool checkValidConnection(size_t in, size_t out) const;
-	NetComponents::Connection* checkExistingConnection(size_t in, size_t out);
+	NetComponents::Connection* getExistingConnection(size_t in, size_t out);
 	bool checkLiveConnections();
 
 	void removeHiddenNode();
@@ -41,6 +41,7 @@ private:
 	void randomizeRandomWeight();
 
 	bool cullConnections();
+	void correctConnections(size_t index);
 	bool isFullyConnected();
 	bool isNodeFullyConnected(size_t index);
 };

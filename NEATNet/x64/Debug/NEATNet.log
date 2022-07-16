@@ -1,2 +1,6 @@
 ﻿  NEATNet.cpp
+  Net.cpp
+C:\Users\Nathaniel\source\repos\NEATNet\NEATNet\NEATNet\src\Net.cpp(284,2): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  Generating Code...
+C:\Users\Nathaniel\source\repos\NEATNet\NEATNet\NEATNet\src\Net.cpp(364): warning C4715: 'Net::isNodeFullyConnected': not all control paths return a value
   NEATNet.vcxproj -> C:\Users\Nathaniel\source\repos\NEATNet\NEATNet\x64\Debug\NEATNet.exe
