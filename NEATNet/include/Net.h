@@ -30,6 +30,7 @@ private:
 
 	bool checkValidConnection(size_t in, size_t out) const;
 	NetComponents::Connection* checkExistingConnection(size_t in, size_t out);
+	bool checkLiveConnections();
 
 	void removeHiddenNode();
 	void removeNode(NetComponents::Node* node);
@@ -40,4 +41,6 @@ private:
 	void randomizeRandomWeight();
 
 	bool cullConnections();
+	bool isFullyConnected();
+	bool isNodeFullyConnected(size_t index);
 };

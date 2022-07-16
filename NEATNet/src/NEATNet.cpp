@@ -9,7 +9,7 @@ int main()
     srand((unsigned int)time(NULL));
     Net* net = new Net(3, 2);
     net->receiveInput({ 10, 9, 3 });
-    for (size_t i = 0; i < 100; ++i)
+    for (size_t i = 0; i < 10000; ++i)
     {
         net->attemptMutation(0.5);
     }

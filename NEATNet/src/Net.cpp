@@ -1,6 +1,7 @@
 #include "Net.h"
 #include <cstdlib>
 #include <iostream>
+#include <assert.h>
 
 using namespace NetComponents;
 
@@ -84,7 +85,7 @@ void Net::addHiddenNode()
 {
 	std::vector<Connection*> connections = m_genotype.connections;
 
-	if (connections.size() > 0)
+	if (connections.size() > 0 && checkLiveConnections())
 	{
 		size_t index = (size_t)Net::randInt((int)connections.size());
 
@@ -109,22 +110,27 @@ void Net::addHiddenNode()
 
 void Net::addRandomConnection()
 {
-	size_t in = (size_t)Net::randInt((int)m_genotype.nodes.size());
-	size_t out = (size_t)Net::randInt((int)m_genotype.nodes.size());
-
-	while (m_genotype.nodes[in]->type == NodeType::Output)
+	if (isFullyConnected())
 	{
-		in = (size_t)Net::randInt((int)m_genotype.nodes.size());
+		addHiddenNode();
 	}
-
-	while (in == out
-	    || !checkValidConnection(in, out) 
-	    || checkExistingConnection(in, out))
+	else
 	{
-		out = (size_t)Net::randInt((int)m_genotype.nodes.size());
-	}
+		size_t in = (size_t)Net::randInt((int)m_genotype.nodes.size());
+		size_t out = (size_t)Net::randInt((int)m_genotype.nodes.size());
 
-	addConnection(in, out);
+		while (m_genotype.nodes[in]->type == NodeType::Output || isNodeFullyConnected(in))
+		{
+			in = (size_t)Net::randInt((int)m_genotype.nodes.size());
+		}
+
+		while (!checkValidConnection(in, out))
+		{
+			out = (size_t)Net::randInt((int)m_genotype.nodes.size());
+		}
+
+		addConnection(in, out);
+	}
 }
 
 void Net::addConnection(size_t in, size_t out)
@@ -135,7 +141,7 @@ void Net::addConnection(size_t in, size_t out)
 	{
 		existingConnection->enabled = true;
 	}
-	else
+	else if (in != out)
 	{
 		Connection* connection = new Connection();
 
@@ -172,7 +178,8 @@ Connection* Net::checkExistingConnection(size_t in, size_t out)
 	{
 		for (size_t i = 0; i < m_genotype.connections.size(); i++)
 		{
-			if (connections[i]->in == in && connections[i]->out == out)
+			if ((connections[i]->in == in && connections[i]->out == out)
+			 || (connections[i]->in == out && connections[i]->out == in))
 			{
 				return connections[i];
 			}
@@ -182,29 +189,52 @@ Connection* Net::checkExistingConnection(size_t in, size_t out)
 	return nullptr;
 }
 
+bool Net::checkLiveConnections()
+{
+	for (Connection* connection : m_genotype.connections)
+	{
+		if (connection->enabled) return true;
+	}
+
+	return false;
+}
+
 void Net::removeHiddenNode()
 {
 	if (m_genotype.nodes.size() > m_numInputs + m_numOutputs)
 	{
-		std::vector<Node*> nodes = m_genotype.nodes;
-		Node* node = nodes[Net::randInt((int)nodes.size())];
+		std::vector<Node*>* nodes = &m_genotype.nodes;
+		size_t index = Net::randInt((int)nodes->size());
+		Node* node = (* nodes)[index];
 		while (node->type != NodeType::Hidden)
 		{
-			node = nodes[Net::randInt((int)nodes.size())];
+			index = Net::randInt((int)nodes->size());
+			node = (* nodes)[index];
 		}
 
+		for (Connection* connection : m_genotype.connections)
+		{
+			if (connection->in == index || connection->out == index)
+			{
+				size_t size = m_genotype.connections.size();
+				removeConnection(connection);
+				assert(m_genotype.connections.size() == size - 1);
+			}
+		}
+
+		size_t nodeCount = m_genotype.nodes.size();
 		removeNode(node);
-		cullConnections();
+		assert(m_genotype.nodes.size() == nodeCount - 1);
 	}
 }
 
 void Net::removeNode(Node* node)
 {
-	std::vector<Node*> nodes = m_genotype.nodes;
-	std::vector<Node*>::iterator index = std::find(nodes.begin(), nodes.end(), node);
-	if (index != nodes.end())
+	std::vector<Node*>* nodes = &m_genotype.nodes;
+	std::vector<Node*>::iterator index = std::find(nodes->begin(), nodes->end(), node);
+	if (index != nodes->end())
 	{
-		nodes.erase(index);
+		nodes->erase(index);
 		free(node);
 	}
 }
@@ -220,15 +250,15 @@ void Net::removeRandomConnection()
 
 void Net::removeConnection(size_t in, size_t out)
 {
-	std::vector<Connection*> connections = m_genotype.connections;
+	std::vector<Connection*>* connections = &m_genotype.connections;
 	Connection* connection = checkExistingConnection(in, out);
 
 	if (connection)
 	{
-		std::vector<Connection*>::iterator index = std::find(connections.begin(), connections.end(), connection);
-		if (index != connections.end())
+		std::vector<Connection*>::iterator index = std::find(connections->begin(), connections->end(), connection);
+		if (index != connections->end())
 		{
-			connections.erase(index);
+			connections->erase(index);
 		}
 	}
 
@@ -252,7 +282,7 @@ bool Net::cullConnections()
 {
 	bool culled = false;
 
-	for (int i = 0; i < m_genotype.nodes.size(); ++i)
+	for (int i = m_numInputs + m_numInputs; i < m_genotype.nodes.size(); ++i)
 	{
 		std::vector<size_t> ins;
 		std::vector<size_t> outs;
@@ -284,4 +314,37 @@ bool Net::cullConnections()
 	}
 
 	return culled;
+}
+
+bool Net::isFullyConnected()
+{
+	for (size_t i = 0; i < m_genotype.nodes.size(); ++i)
+	{
+		if (!isNodeFullyConnected(i)) return false;
+	}
+
+	return true;
+}
+
+bool Net::isNodeFullyConnected(size_t index)
+{
+	Node* node = m_genotype.nodes[index];
+
+	size_t count = 0;
+	for (Connection* connection : m_genotype.connections)
+	{
+		if (connection->in == index || connection->out == index) count++;
+	}
+
+	switch (node->type)
+	{
+		case NodeType::Sensor:
+			return count == m_genotype.nodes.size() - m_numInputs;
+
+		case NodeType::Output:
+			return count == m_genotype.nodes.size() - m_numOutputs;
+
+		case NodeType::Hidden:
+			return count == m_genotype.nodes.size() - 1;
+	}
 }
