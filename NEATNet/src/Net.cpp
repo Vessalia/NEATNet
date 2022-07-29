@@ -28,12 +28,12 @@ Net::Net(size_t numInputs, size_t numOutputs)
 
 Net::~Net()
 {
-	for (Connection* connection : m_genotype.connections)
+	for (auto connection : m_genotype.connections)
 	{
 		free(connection);
 	}
 
-	for (Node* node : m_genotype.nodes)
+	for (auto node : m_genotype.nodes)
 	{
 		free(node);
 	}
@@ -149,9 +149,12 @@ void Net::addConnection(size_t in, size_t out)
 		connection->out = out;
 		connection->enabled = true;
 		connection->weight = 2 * Net::randDecimal() - 1;
-		connection->innovation = m_innovation++;
 
-		m_genotype.connections.push_back(connection);
+		if (!connectionIsCyclic(connection, nullptr))
+		{
+			connection->innovation = m_innovation++;
+			m_genotype.connections.push_back(connection);
+		}
 	}
 }
 
@@ -212,21 +215,21 @@ void Net::removeHiddenNode()
 			node = nodes[index];
 		}
 
-		for (Connection* connection : m_genotype.connections)
+		std::vector<Connection*> toRemove;
+		for (auto connection : m_genotype.connections)
 		{
 			if (connection->in == index || connection->out == index)
 			{
-				size_t size = m_genotype.connections.size();
-				removeConnection(connection);
-				assert(m_genotype.connections.size() == size - 1);
+				toRemove.push_back(connection);
 			}
+		}
+		for (auto remove : toRemove)
+		{
+			removeConnection(remove);
 		}
 
 		correctConnections(index);
-
-		size_t nodeCount = m_genotype.nodes.size();
 		removeNode(node);
-		assert(m_genotype.nodes.size() == nodeCount - 1);
 	}
 }
 
@@ -234,6 +237,7 @@ void Net::removeNode(Node* node)
 {
 	auto& nodes = m_genotype.nodes;
 	auto index = std::find(nodes.begin(), nodes.end(), node);
+
 	if (index != nodes.end())
 	{
 		nodes.erase(index);
@@ -253,7 +257,6 @@ void Net::removeConnection(size_t in, size_t out)
 {
 	auto& connections = m_genotype.connections;
 	Connection* connection = getExistingConnection(in, out);
-	assert(connection);
 
 	auto index = std::find(connections.begin(), connections.end(), connection);
 	if (index != connections.end())
@@ -281,7 +284,7 @@ bool Net::cullConnections()
 {
 	bool culled = false;
 
-	for (int i = m_numInputs + m_numInputs; i < m_genotype.nodes.size(); ++i)
+	for (size_t i = m_numInputs + m_numInputs; i < m_genotype.nodes.size(); ++i)
 	{
 		std::vector<size_t> ins;
 		std::vector<size_t> outs;
@@ -317,7 +320,7 @@ bool Net::cullConnections()
 
 void Net::correctConnections(size_t index)
 {
-	for (Connection* connection : m_genotype.connections)
+	for (auto connection : m_genotype.connections)
 	{
 		if (connection->in > index)
 		{
@@ -361,4 +364,41 @@ bool Net::isNodeFullyConnected(size_t index)
 		case NodeType::Hidden:
 			return count == m_genotype.nodes.size() - 1;
 	}
+}
+
+bool Net::connectionIsCyclic(const Connection* masterConnection, const Connection* connection) const
+{
+	size_t start = masterConnection->in;
+
+	if (m_genotype.nodes[masterConnection->out]->type == NodeType::Output)
+	{
+		return false;
+	}
+	else if (connection)
+	{
+		if (masterConnection->in == connection->in
+			&& masterConnection->out == connection->out)
+		{
+			return true;
+		}
+	}
+	else
+	{
+		std::vector<Connection*> branches;
+
+		for (Connection* conn : m_genotype.connections)
+		{
+			if (conn->in == masterConnection->out)
+			{
+				branches.push_back(conn);
+			}
+		}
+
+		for (Connection* conn : branches)
+		{
+			return connectionIsCyclic(masterConnection, conn);
+		}
+	}
+
+	return false;
 }

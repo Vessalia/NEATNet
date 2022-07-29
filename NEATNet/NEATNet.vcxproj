@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="src\Net.cpp" />
     <ClCompile Include="src\NEATNet.cpp" />
+    <ClCompile Include="src\Node.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Net.h" />

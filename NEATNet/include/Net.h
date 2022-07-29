@@ -12,6 +12,8 @@ public:
 
 	void receiveInput(const std::vector<double>& inputVals);
 
+
+
 	void attemptMutation(double mutationRate);
 
 private:
@@ -44,4 +46,6 @@ private:
 	void correctConnections(size_t index);
 	bool isFullyConnected();
 	bool isNodeFullyConnected(size_t index);
+
+	bool connectionIsCyclic(const NetComponents::Connection* masterConnection, const NetComponents::Connection* connection) const;
 };

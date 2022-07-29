@@ -15,6 +15,8 @@ namespace NetComponents
 	{
 		double value;
 		NodeType type;
+
+		void feedForward();
 	};
 
 	struct Connection
